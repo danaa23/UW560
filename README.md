@@ -1,1 +1,3 @@
 # UW560
+
+Breast cancer classification project. This projects contains ...
