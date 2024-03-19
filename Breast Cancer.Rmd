@@ -1,0 +1,202 @@
+---
+title: "Project Data Mining"
+author: "Dana Abdirakhym"
+date: "2024-03-18"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Load libraries
+
+```{r}
+library(caret)
+library(tidyverse) # for data manipulation and visualization
+library(randomForest)
+library(e1071) # for SVM
+library(nnet) # for neural network
+install.packages("kernlab")
+library(kernlab)
+```
+
+## Step 1. Import and parse breastcancer data set
+
+```{r}
+library(readr)
+data <- read_csv("/Users/danaabdirakhym/Downloads/breast_cancer.csv")
+
+##Coverted Malignant to 1, Benign  to 0
+data$diagnosis <- as.factor(ifelse(data$diagnosis == "M", 1, 0)) 
+breast_cancer <- na.omit(data)
+
+breast_cancer <- subset(breast_cancer, select = -id)
+colnames(breast_cancer)
+```
+###Step 2. Create at least four different classifiers. Determine the needed features and create training and test data.
+
+```{r}
+library(caret)
+set.seed(123) # for reproducibility
+
+### Splitting to train and test data 80 to 20
+index <- createDataPartition(breast_cancer$diagnosis, p=0.8, list=FALSE)
+train_data <- breast_cancer[index, ]
+test_data <- breast_cancer[-index, ]
+
+
+head(train_data)
+head(test_data)
+# Check the levels before conversion
+levels(breast_cancer$diagnosis)
+
+# Convert factor levels "0" and "1" to actual numeric values 0 and 1
+# This conversion ensures that 'diagnosis' is now a numeric variable instead of a factor.
+breast_cancer$diagnosis <- as.numeric(as.character(breast_cancer$diagnosis))
+train_data$diagnosis <- as.numeric(as.character(train_data$diagnosis))
+test_data$diagnosis <- as.numeric(as.character(test_data$diagnosis))
+
+
+
+```
+
+
+```{r}
+###Creating the model using recursive partitioning
+
+if (!requireNamespace("rpart", quietly = TRUE)) {
+    install.packages("rpart")
+}
+library(rpart)
+
+
+# Fit a decision tree model 1
+
+model1_rpart <- rpart(diagnosis ~ ., data = train_data, method = "class")
+model1_pred <- predict(model1_rpart, type="class", newdata= test_data)
+model1_prob <-predict(model1_rpart, type="prob", newdata= test_data)
+
+
+plot(model1_rpart, main= "decision tree model 1")
+
+
+##create model using conditional inferences
+if (!requireNamespace("party", quietly = TRUE)) {
+    install.packages("party")
+}
+library(party)
+
+
+model2 <- ctree(diagnosis ~ ., data = train_data)
+# Predict class labels
+model2_pred <- predict(model2, newdata = test_data, type = "response")
+# Predict probabilities
+model2_prob <- predict(model2, newdata = test_data, type = "prob")
+
+plot(model2, main= "decision tree model using conditional inference tree")
+
+```
+```{r}
+###create random forest using conditional inference tree 
+
+if (!requireNamespace("ipred", quietly = TRUE)) {
+    install.packages("ipred")
+}
+library(ipred)
+# Fit a Bagging model
+model3_bagging <- bagging(diagnosis ~ ., data = train_data, nbagg = 25)  # 'nbagg' denotes the number of bootstrap aggregations or "bags"
+model3_bagging_pred <- predict(model3_bagging, newdata = test_data, type = "class")
+model3_bagging_pred <- predict(model3_bagging, newdata = test_data, type = "prob")
+
+
+```
+
+##Step 3 Provide your performance measure: confusion matrix, accuracy, recall, etc.
+
+```{r}
+if (!requireNamespace("caret", quietly = TRUE)) {
+    install.packages("caret")
+}
+library(caret)
+
+if (!requireNamespace("e1071", quietly = TRUE)) {  # Required for SVM
+    install.packages("e1071")
+}
+if (!requireNamespace("class", quietly = TRUE)) {  # Might be required for KNN
+    install.packages("class")
+}
+# Convert 'diagnosis' to a factor with two levels
+train_data$diagnosis <- factor(train_data$diagnosis, levels = c('0', '1')) 
+test_data$diagnosis <- factor(test_data$diagnosis, levels = c('0', '1'))  
+
+# Support vector machines
+model_svm <- train(diagnosis ~ ., data = train_data, method = "svmRadial")
+model_svm_pred <- predict(model_svm, newdata = test_data)
+model_svm_prob <- predict(model_svm, newdata = test_data, type = "prob")
+
+#Knn model
+model_knn <- train(diagnosis ~ ., data = train_data, method = "knn")
+model_knn_pred <- predict(model_knn, newdata = test_data)
+model_knn_prob <- predict(model_knn, newdata = test_data, type = "prob")
+
+#Logistic regression model
+model_log <- train(diagnosis ~ ., data = train_data, method = "glm", family = "binomial")
+model_log_pred <- predict(model_log, newdata = test_data)
+model_log_prob <- predict(model_log, newdata = test_data, type = "prob")
+
+
+# Calculate performance metrics for the SVM model
+conf_matrix_svm <- confusionMatrix(factor(model_svm_pred, levels = levels(test_data$diagnosis)), test_data$diagnosis)
+precision_svm <- conf_matrix_svm$byClass['Pos Pred Value']  # This is the precision
+recall_svm <- conf_matrix_svm$byClass['Sensitivity']  # This is the recall
+accuracy_svm <- conf_matrix_svm$overall['Accuracy']
+
+# Calculate performance metrics for the KNN model
+conf_matrix_knn <- confusionMatrix(factor(model_knn_pred, levels = levels(test_data$diagnosis)), test_data$diagnosis)
+precision_knn <- conf_matrix_knn$byClass['Pos Pred Value']
+recall_knn <- conf_matrix_knn$byClass['Sensitivity']
+accuracy_knn <- conf_matrix_knn$overall['Accuracy']
+
+# Calculate performance metrics for the Logistic Regression model
+conf_matrix_log <- confusionMatrix(factor(model_log_pred, levels = levels(test_data$diagnosis)), test_data$diagnosis)
+precision_log <- conf_matrix_log$byClass['Pos Pred Value']
+recall_log <- conf_matrix_log$byClass['Sensitivity']
+accuracy_log <- conf_matrix_log$overall['Accuracy']
+
+# Print out the metrics
+cat("SVM Metrics: Accuracy =", accuracy_svm, ", Precision =", precision_svm, ", Recall =", recall_svm, "\n")
+cat("KNN Metrics: Accuracy =", accuracy_knn, ", Precision =", precision_knn, ", Recall =", recall_knn, "\n")
+cat("Logistic Regression Metrics: Accuracy =", accuracy_log, ", Precision =", precision_log, ", Recall =", recall_log, "\n")
+
+
+
+```
+###Step 4 Combine the classifiers in an ensemble
+```{r}
+
+classifier1_svm <- as.numeric(model_svm_pred) - 1  # Convert factors to numeric
+classifier2_knn <- as.numeric(model_knn_pred) - 1
+classifier3_log <- as.numeric(model_log_pred) - 1
+classifier4_dtree <- as.numeric(model1_pred) - 1
+
+# Assuming your factor levels are correctly ordered, like c('0', '1')
+# If they are not, replace '0' and '1' with the actual factor levels from your predictions
+classifier1_svm <- ifelse(model_svm_pred == '1', 1, 0)  # Adjust based on your actual levels
+classifier2_knn <- ifelse(model_knn_pred == '1', 1, 0)
+classifier3_log <- ifelse(model_log_pred == '1', 1, 0)
+classifier4_dtree <- ifelse(model1_pred == '1', 1, 0)
+
+
+
+combine.df <- data.frame(classifier1_svm, classifier2_knn, classifier3_log, classifier4_dtree)
+combine.df
+combine.df$vote <- rowSums(combine.df)
+combine.df$class <- ifelse(combine.df$vote >= 2,1,0)
+ # Majority is 'malignant' if 2 or more classifiers predict 1
+combine.df
+```
+
