@@ -26,6 +26,14 @@ Breast cancer is the most common cancer amongst women in the world. It accounts 
 - **Recall:** 90.14%
 - The recall is lower than both SVM and KNN models, indicating that while logistic regression is very confident in its predictions (as shown by its precision), it misses more actual malignant cases compared to the other models.
 
+  ## Decision Tree Metrics:
+
+- **Accuracy:** The model achieved an accuracy of approximately 88.50%. This indicates that the model correctly classified 88.50% of the instances in the test dataset.
+
+- **Precision:** For the 'benign' class, the precision is approximately 93.94%, while for the 'malignant' class, it is around 80.85%. Precision measures the proportion of true positive predictions out of all positive predictions made by the model. In this context, it suggests that when the model predicts an instance as 'benign', it is correct approximately 93.94% of the time, and when it predicts 'malignant', it is correct approximately 80.85% of the time.
+
+- **Recall:** The recall for the 'benign' class is approximately 87.32%, while for the 'malignant' class, it is about 90.48%. Recall measures the proportion of true positive instances that were correctly identified by the model out of all actual positive instances. In this scenario, it indicates that the model correctly identified approximately 87.32% of all actual 'benign' cases and approximately 90.48% of all actual 'malignant' cases.
+
 ## Summary:
 - The SVM model exhibits the best overall performance among the three models in terms of accuracy and balance between precision and recall. It is the most reliable model for classifying the conditions as either benign or malignant with minimal errors.
 - The KNN model shows good performance but is slightly less accurate and precise than the SVM model. Its recall is also slightly less than the SVM, making it a second choice if the SVM model is not available.
